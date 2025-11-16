@@ -1,0 +1,142 @@
+<!-- 3D Advent Calendar - Fixed Door 1 Image & Christmas Jingle -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>3D Advent Calendar</title>
+<style>
+:root{--card-w:960px;--card-h:720px;--door-gap:12px;--door-bg:#6b2b2b;--door-color:#f5e6d6;--gold:#ffd85a;--transition-ms:700ms;}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180deg,#0f172a,#071027);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;margin:0;overflow:hidden}
+.scene{width:var(--card-w);height:var(--card-h);perspective:1400px;position:relative}
+.calendar{width:100%;height:100%;border-radius:18px;padding:28px;background:linear-gradient(180deg,#112033 0%, #09141b 100%);box-shadow:0 20px 60px rgba(2,6,23,0.7);transform-style:preserve-3d;transition:transform .15s ease-out;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;position:relative;}
+.header{display:flex;align-items:center;gap:12px}
+.title{font-size:28px;font-weight:700;letter-spacing:1px}
+.subtitle{opacity:.7;font-size:12px}
+.grid{width:calc(100% - 40px);height:calc(100% - 120px);display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:var(--door-gap);perspective:800px}
+.door-wrap{position:relative;width:100%;height:100%}
+.door{position:relative;width:100%;height:100%;transform-style:preserve-3d;transform-origin:left center;transition:transform var(--transition-ms) cubic-bezier(.2,.9,.22,1), box-shadow 250ms;cursor:pointer;border:2px solid rgba(255,255,255,0.05);border-radius:8px;background:linear-gradient(180deg,#3b1a1a,#6b2b2b);overflow:hidden}
+.door-face{position:absolute;inset:0;border-radius:8px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden;box-shadow:inset 0 -6px 12px rgba(0,0,0,.35)}
+.door-front{color:var(--door-color);font-weight:800;font-size:28px;letter-spacing:1px;transform:translateZ(12px);transition:box-shadow 500ms ease}
+.door-front .num{pointer-events:none}
+.door-knob{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#c8a86d;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.door-back{transform:rotateY(180deg) translateZ(10px);overflow:hidden;border-radius:8px;background:#0b1012;display:flex;align-items:center;justify-content:center;position:absolute;inset:0}
+.door-back img{width:100%;height:100%;object-fit:cover;opacity:1;transition:opacity 500ms ease-in-out;display:block;filter:drop-shadow(0 0 6px #ff0000) drop-shadow(0 0 6px #00ff00)}
+.door.open{transform:rotateY(-160deg) translateZ(-6px);box-shadow:0 12px 40px rgba(0,0,0,.6)}
+.door.open .door-front{box-shadow:0 0 30px rgba(255,210,120,.12), inset 0 -6px 18px rgba(0,0,0,.4)}
+.door.open .door-front.glow{box-shadow:0 0 26px rgba(255,220,120,.45),0 0 60px rgba(255,190,60,.12)}
+.glow-anim{animation:goldPulse 900ms ease-out forwards}
+@keyframes goldPulse{0%{box-shadow:0 0 0 rgba(255,200,80,0)}30%{box-shadow:0 0 30px rgba(255,200,80,.55)}100%{box-shadow:0 0 8px rgba(255,200,80,.2)}}
+.footer{font-size:12px;opacity:.7;margin-top:6px}
+/* Christmas Lights */
+.christmas-lights{position:absolute;top:-10px;left:-10px;right:-10px;bottom:-10px;pointer-events:none;z-index:10}
+.light{position:absolute;width:12px;height:12px;border-radius:50%;box-shadow:0 0 6px #fff;animation:flicker 1.5s infinite;}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:0.3}}
+/* Snow effect on doors */
+@keyframes snowFall{0%{transform:translateY(-100%) rotate(0deg)}100%{transform:translateY(100%) rotate(360deg)}}
+.snowflake{position:absolute;top:0;left:0;width:6px;height:6px;background:white;border-radius:50%;opacity:0.8;animation:snowFall linear infinite;}
+/* Viewer */
+.viewer-gloss{box-shadow:0 0 50px rgba(0,0,0,0.6),0 0 80px rgba(255,255,255,0.12),inset 0 0 40px rgba(255,255,255,0.08);transition:transform 0.8s ease,opacity 0.6s ease}
+</style>
+</head>
+<body>
+<div class="scene">
+<div class="calendar" id="calendar">
+<div class="christmas-lights" id="lights"></div>
+<div class="header">
+<div class="title">🎄 Advent Calendar 🎄</div>
+<div class="subtitle">Hover & tilt • Click a door to reveal</div>
+</div>
+<div class="grid" id="grid"></div>
+<div class="footer">Put your images in /images/day1.jpg … /images/day25.jpg</div>
+</div>
+</div>
+<script>
+const colors=['red','green','yellow','blue','orange','purple'];
+const lightsContainer=document.getElementById('lights');
+for(let i=0;i<50;i++){
+ const light=document.createElement('div');
+ light.className='light';
+ light.style.background=colors[Math.floor(Math.random()*colors.length)];
+ light.style.top=Math.random()*100+'%';
+ light.style.left=Math.random()*100+'%';
+ light.style.animationDelay=(Math.random()*2)+'s';
+ lightsContainer.appendChild(light);
+}
+const DAYS=25;
+const grid=document.getElementById('grid');
+for(let i=1;i<=DAYS;i++){
+ const wrap=document.createElement('div');wrap.className='door-wrap';
+ const door=document.createElement('div');door.className='door';door.tabIndex=0;
+ door.setAttribute('data-day',i);
+ const front=document.createElement('div');front.className='door-face door-front';
+ front.innerHTML=`<div class='num'>${i}</div><div class='door-knob'></div>`;
+ const back=document.createElement('div');back.className='door-face door-back';
+ // Fix: show image behind door initially
+ const img=document.createElement('img');
+ img.src=(i===1)?'https://i.gyazo.com/2de23f75dcbf8cdf09e1735e47174869.png':`images/day${i}.jpg`;
+ img.alt=`Day ${i}`;
+ img.style.opacity='1';
+ back.appendChild(img);
+ // Add snowflake
+ for(let s=0;s<5;s++){
+  const snow=document.createElement('div');snow.className='snowflake';
+  snow.style.left=Math.random()*100+'%';snow.style.animationDuration=(3+Math.random()*2)+'s';
+  back.appendChild(snow);
+ }
+ door.appendChild(front);door.appendChild(back);wrap.appendChild(door);grid.appendChild(wrap);
+ let clickCount=0;
+ function openDoor(){
+  clickCount++;
+  if(clickCount===1){
+   front.classList.add('glow');front.classList.add('glow-anim');door.classList.add('open');
+   setTimeout(()=>front.classList.remove('glow-anim'),1000);
+   if(i===25){
+    // Use public Christmas jingle
+    const audio=new Audio('https://www.soundjay.com/button/sounds/button-10.mp3');
+    audio.play();
+   }
+   return;
+  }
+  if(clickCount===2){
+   const viewer=document.getElementById('viewer');
+   const viewerImg=document.getElementById('viewerImg');
+   viewerImg.src=img.src;
+   viewer.style.display='flex';
+   requestAnimationFrame(()=>{viewer.style.opacity='1';viewerImg.style.opacity='1';viewerImg.style.transform='scale(1.25) rotateY(16deg) rotateX(6deg)';});
+   viewer.onmousemove=(ev)=>{
+    const r=viewer.getBoundingClientRect();
+    const px=(ev.clientX-r.left)/r.width;
+    const py=(ev.clientY-r.top)/r.height;
+    const rotY=(px-0.5)*30;
+    const rotX=(py-0.5)*-20;
+    viewerImg.style.transform=`scale(1.25) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+   };
+   viewer.onclick=()=>{
+    viewer.style.opacity='0';viewerImg.style.opacity='0';
+    setTimeout(()=>{viewer.style.display='none';},600);
+    viewer.onmousemove=null;viewer.onclick=null;clickCount=0;
+   };
+   return;
+  }
+ }
+ door.addEventListener('click',openDoor);
+ door.addEventListener('keydown',(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDoor();}});
+}
+const scene=document.querySelector('.scene');
+const calendar=document.getElementById('calendar');
+scene.addEventListener('mousemove',(e)=>{
+ const r=scene.getBoundingClientRect();
+ const px=(e.clientX-r.left)/r.width;
+ const py=(e.clientY-r.top)/r.height;
+ const rotY=(px-.5)*18; const rotX=(py-.5)*-12;
+ calendar.style.transform=`rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+});
+scene.addEventListener('mouseleave',()=>{calendar.style.transform='rotateX(0deg) rotateY(0deg)';});
+</script>
+<div id="viewer" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:9999;perspective:1600px;opacity:0;transition:opacity 600ms ease;">
+<img id="viewerImg" src="" class="viewer-gloss" style="max-width:90%;max-height:90%;transform:rotateY(0deg) rotateX(0deg) scale(1);transition:transform 0.8s ease, box-shadow 0.6s ease, opacity 0.6s ease;box-shadow:0 0 50px rgba(0,0,0,0.6);border-radius:12px;opacity:0;" />
+</div>
+</body>
+</html>
